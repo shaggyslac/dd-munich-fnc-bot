@@ -74,8 +74,11 @@ pnpm dry-run     # gegen die Live-Seite, zeigt nur an, sendet nichts
 pnpm typecheck
 ```
 
-Einen echten Testlauf inklusive Versand startest du über *Actions → Friday Night Commander Watcher →
-Run workflow*, mit `dry_run = false`.
+In GitHub startest du einen Dry-Run über *Actions → Friday Night Commander Watcher → Run workflow*.
+
+Vorsicht mit `dry_run = false`: Das ist kein Test, sondern der echte Ablauf. Er sendet nur, wenn der
+Preis bereits 14 € ist, und markiert den Freitag danach als erledigt – die reguläre Ankündigung für
+diesen Freitag kommt dann nicht mehr.
 
 ## Konfiguration
 
