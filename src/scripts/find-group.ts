@@ -23,19 +23,20 @@ async function main(): Promise<void> {
   });
 
   const groups = chats.filter((chat) => chat.id.endsWith("@g.us"));
-  console.log(`${groups.length} Gruppen gefunden:\n`);
-
-  for (const group of groups) {
-    const name = group.name ?? "(kein Name)";
-    const hit = name.toLowerCase().includes(nameFilter) ? "  <-- das ist sie" : "";
-    console.log(`  ${group.id}   ${name}${hit}`);
-  }
+  // Only print matches: the full list exposes every group the account is in.
+  const matches = groups.filter((group) => (group.name ?? "").toLowerCase().includes(nameFilter));
 
   if (groups.length === 0) {
     console.log(
       "Keine Gruppen sichtbar. Green API liefert Chats erst, wenn das Handy einmal\n" +
         "synchronisiert hat — kurz warten und erneut versuchen.",
     );
+    return;
+  }
+
+  console.log(`${matches.length} von ${groups.length} Gruppen passen zu "${nameFilter}":\n`);
+  for (const group of matches) {
+    console.log(`  ${group.id}   ${group.name ?? "(kein Name)"}`);
   }
 }
 
