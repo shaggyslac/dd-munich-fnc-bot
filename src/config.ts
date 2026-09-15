@@ -21,6 +21,13 @@ export interface Config {
   readonly ignoreWindow: boolean;
   /** Ignore the price condition (for manual testing). */
   readonly ignorePrice: boolean;
+  /**
+   * End-to-end test: really sends, but marks the message as a test and keeps
+   * its own state file, so the real announcement is not suppressed.
+   */
+  readonly testMode: boolean;
+  /** State file, relative to the repository root. */
+  readonly stateFile: string;
 }
 
 function readFlag(name: string): boolean {
@@ -38,6 +45,7 @@ function readRequired(name: string, dryRun: boolean): string {
 
 export function loadConfig(): Config {
   const dryRun = readFlag("DRY_RUN");
+  const testMode = readFlag("TEST_MODE");
   const priceRaw = process.env["EXPECTED_PRICE_EUR"];
   const expectedPriceEur = priceRaw === undefined || priceRaw === "" ? 14 : Number(priceRaw);
 
@@ -54,7 +62,10 @@ export function loadConfig(): Config {
     greenApiToken: readRequired("GREENAPI_API_TOKEN", dryRun),
     groupChatId: readRequired("WHATSAPP_GROUP_ID", dryRun),
     dryRun,
-    ignoreWindow: readFlag("IGNORE_WINDOW"),
-    ignorePrice: readFlag("IGNORE_PRICE"),
+    // A test has to run now and with whatever price is currently listed.
+    ignoreWindow: testMode || readFlag("IGNORE_WINDOW"),
+    ignorePrice: testMode || readFlag("IGNORE_PRICE"),
+    testMode,
+    stateFile: testMode ? "state/test-posted.json" : "state/posted.json",
   };
 }

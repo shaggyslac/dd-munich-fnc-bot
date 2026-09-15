@@ -10,6 +10,20 @@ const NUMBER_EMOJI = ["1️⃣", "2️⃣", "3️⃣", "4️⃣", "5️⃣", "6�
 
 const SIGNATURE = "_Automatische Nachricht vom FNC-Bot 🤖 – ich schaue alle 10 Minuten auf dd-munich.de._";
 
+const TEST_BANNER = [
+  "🧪 *TESTNACHRICHT – bitte ignorieren*",
+  "",
+  "Ich bin der neue FNC-Bot 🤖 und melde mich künftig hier, sobald *Friday Night Commander* für den " +
+    "kommenden Freitag online ist und die Tickets 14 € kosten.",
+  "",
+  "Das hier ist nur ein Funktionstest mit den aktuellen Daten der Website. Der Preis steht dort " +
+    "noch auf dem Platzhalter, die echte Meldung kommt, sobald er umgestellt ist.",
+  "",
+  "────────────",
+  "",
+  "",
+].join("\n");
+
 export function formatEuro(amount: number): string {
   return `${amount.toFixed(2).replace(".", ",")} €`;
 }
@@ -27,6 +41,16 @@ function priceLine(event: EventDetails, expectedPriceEur: number): string {
 }
 
 export function buildMessage(
+  events: readonly EventDetails[],
+  isoDate: string,
+  expectedPriceEur: number,
+  testMode = false,
+): string {
+  const body = buildAnnouncement(events, isoDate, expectedPriceEur);
+  return testMode ? `${TEST_BANNER}${body}` : body;
+}
+
+function buildAnnouncement(
   events: readonly EventDetails[],
   isoDate: string,
   expectedPriceEur: number,

@@ -3,6 +3,7 @@
  * coming Friday at the expected price, and announce it once in WhatsApp.
  */
 
+import { fileURLToPath } from "node:url";
 import { loadConfig } from "./config.js";
 import { buildMessage, formatEuro } from "./message.js";
 import { fetchEventDetails, fetchEventList, type EventDetails, type EventListEntry } from "./scraper.js";
@@ -10,7 +11,7 @@ import { hasBeenPosted, loadState, saveState } from "./state.js";
 import { berlinTime, isWithinWatchWindow, upcomingFriday } from "./time.js";
 import { sendGroupMessage } from "./whatsapp.js";
 
-const STATE_PATH = new URL("../state/posted.json", import.meta.url).pathname;
+const REPO_ROOT = new URL("../", import.meta.url);
 
 function log(message: string): void {
   console.log(`[${new Date().toISOString()}] ${message}`);
@@ -31,8 +32,13 @@ function matchesTitle(entry: EventListEntry, prefix: string): boolean {
 
 async function main(): Promise<void> {
   const config = loadConfig();
+  const statePath = fileURLToPath(new URL(config.stateFile, REPO_ROOT));
   const now = berlinTime();
   const targetFriday = upcomingFriday(now);
+
+  if (config.testMode) {
+    log(`TEST MODE — window and price are ignored, state goes to ${config.stateFile}.`);
+  }
 
   log(`Now (Berlin): ${now.isoDate} ${String(now.hour).padStart(2, "0")}:${String(now.minute).padStart(2, "0")} — target Friday: ${targetFriday}`);
 
@@ -41,7 +47,7 @@ async function main(): Promise<void> {
     return;
   }
 
-  const state = await loadState(STATE_PATH);
+  const state = await loadState(statePath);
   if (hasBeenPosted(state, targetFriday) && !config.dryRun) {
     log(`Already announced ${targetFriday}. Nothing to do.`);
     return;
@@ -92,7 +98,7 @@ async function main(): Promise<void> {
     return;
   }
 
-  const message = buildMessage(priced, targetFriday, config.expectedPriceEur);
+  const message = buildMessage(priced, targetFriday, config.expectedPriceEur, config.testMode);
 
   if (config.dryRun) {
     log("DRY RUN — message that would be sent:\n");
@@ -111,7 +117,7 @@ async function main(): Promise<void> {
   );
   log(`Sent to WhatsApp (message id ${messageId}).`);
 
-  await saveState(STATE_PATH, {
+  await saveState(statePath, {
     ...state,
     [targetFriday]: {
       postedAt: new Date().toISOString(),
