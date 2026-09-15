@@ -1,0 +1,21 @@
+{
+  "name": "dd-munich-fnc-bot",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Watches dd-munich.de for the Friday Night Commander event and announces it in a WhatsApp group.",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "check": "tsx src/index.ts",
+    "dry-run": "DRY_RUN=true IGNORE_WINDOW=true tsx src/index.ts",
+    "find-group": "tsx src/scripts/find-group.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2"
+  }
+}

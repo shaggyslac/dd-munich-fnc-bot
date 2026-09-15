@@ -1,0 +1,71 @@
+name: Friday Night Commander Watcher
+
+on:
+  # GitHub cron is UTC and enforces a 5-minute minimum. We poll Tue–Fri and let
+  # the script decide the exact window (Wed 00:00 – Fri 18:00, Europe/Berlin),
+  # which keeps the schedule correct across DST changes.
+  schedule:
+    - cron: "*/10 * * * 2,3,4,5"
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Nur anzeigen, nichts senden"
+        type: boolean
+        default: true
+      ignore_window:
+        description: "Zeitfenster ignorieren"
+        type: boolean
+        default: true
+
+# Scheduled runs can overlap when GitHub is under load; never announce twice.
+concurrency:
+  group: fnc-watcher
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Check for the event
+        env:
+          GREENAPI_ID_INSTANCE: ${{ secrets.GREENAPI_ID_INSTANCE }}
+          GREENAPI_API_TOKEN: ${{ secrets.GREENAPI_API_TOKEN }}
+          GREENAPI_BASE_URL: ${{ vars.GREENAPI_BASE_URL || 'https://api.green-api.com' }}
+          WHATSAPP_GROUP_ID: ${{ secrets.WHATSAPP_GROUP_ID }}
+          EXPECTED_PRICE_EUR: ${{ vars.EXPECTED_PRICE_EUR || '14' }}
+          DRY_RUN: ${{ inputs.dry_run }}
+          IGNORE_WINDOW: ${{ inputs.ignore_window }}
+        run: pnpm check
+
+      # The commit records what was announced and, as a side effect, counts as
+      # repository activity — GitHub disables scheduled workflows after 60 days
+      # without any.
+      - name: Persist state
+        run: |
+          if [[ -z "$(git status --porcelain state/)" ]]; then
+            echo "Kein Statuswechsel."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add state/
+          git commit -m "chore: Event für $(date -u +%Y-%m-%d) als gepostet markiert"
+          git push
