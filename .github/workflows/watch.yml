@@ -1,11 +1,10 @@
 name: Friday Night Commander Watcher
 
+# The live checks run as a Cloudflare Worker (src/worker.ts). GitHub's
+# scheduler skipped runs for up to seven hours at a time, which made late or
+# missed announcements a matter of time — so there is no `schedule:` here any
+# more. This workflow is kept for manual dry runs only.
 on:
-  # GitHub cron is UTC and enforces a 5-minute minimum. We poll Tue–Fri and let
-  # the script decide the exact window (Wed 00:00 – Fri 18:00, Europe/Berlin),
-  # which keeps the schedule correct across DST changes.
-  schedule:
-    - cron: "*/10 * * * 2,3,4,5"
   workflow_dispatch:
     inputs:
       dry_run:

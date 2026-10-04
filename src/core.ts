@@ -54,7 +54,8 @@ export async function runCheck(config: Config, store: StateStore): Promise<Check
   };
 
   const now = berlinTime();
-  const targetFriday = upcomingFriday(now);
+  const targetFriday =
+    config.targetFridayOverride === "" ? upcomingFriday(now) : config.targetFridayOverride;
   const done = (outcome: Outcome, message: string | null = null, messageId: string | null = null): CheckResult => ({
     targetFriday,
     outcome,

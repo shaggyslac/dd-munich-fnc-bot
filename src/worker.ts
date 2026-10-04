@@ -80,10 +80,11 @@ export default {
     try {
       if (mode === "status") return text(await describeState(env));
 
-      const overrides =
-        mode === "test"
-          ? { TEST_MODE: "true" }
-          : { DRY_RUN: "true", IGNORE_WINDOW: "true" };
+      const friday = url.searchParams.get("friday");
+      const overrides: Record<string, string> = {
+        ...(mode === "test" ? { TEST_MODE: "true" } : { DRY_RUN: "true", IGNORE_WINDOW: "true" }),
+        ...(friday === null ? {} : { TARGET_FRIDAY: friday }),
+      };
 
       const result = await runCheck(loadConfig(envFor(env, overrides)), new KvStateStore(env.STATE));
       return text(

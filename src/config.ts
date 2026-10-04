@@ -36,6 +36,11 @@ export interface Config {
   readonly testMode: boolean;
   /** State file for the Node entry point, relative to the repository root. */
   readonly stateFile: string;
+  /**
+   * Checks this Friday instead of the coming one. Honoured only in test or dry
+   * runs, so a live run can never be pointed at the wrong date.
+   */
+  readonly targetFridayOverride: string;
 }
 
 function readFlag(env: EnvSource, name: string): boolean {
@@ -76,5 +81,6 @@ export function loadConfig(env: EnvSource): Config {
     ignorePrice: testMode || readFlag(env, "IGNORE_PRICE"),
     testMode,
     stateFile: testMode ? "state/test-posted.json" : "state/posted.json",
+    targetFridayOverride: testMode || dryRun ? (env["TARGET_FRIDAY"] ?? "") : "",
   };
 }
