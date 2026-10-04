@@ -8,6 +8,7 @@
 import { readFile, writeFile } from "node:fs/promises";
 import { dirname } from "node:path";
 import { mkdirSync } from "node:fs";
+import type { StateStore } from "./core.js";
 
 export interface PostedRecord {
   readonly postedAt: string;
@@ -42,6 +43,23 @@ export async function saveState(path: string, state: PostedState): Promise<void>
 
 export function hasBeenPosted(state: PostedState, isoDate: string): boolean {
   return Object.prototype.hasOwnProperty.call(state, isoDate);
+}
+
+/** File-backed state for the Node entry point. */
+export class FileStateStore implements StateStore {
+  constructor(private readonly path: string) {}
+
+  async hasPosted(isoDate: string): Promise<boolean> {
+    return hasBeenPosted(await loadState(this.path), isoDate);
+  }
+
+  async markPosted(isoDate: string, events: readonly string[]): Promise<void> {
+    const state = await loadState(this.path);
+    await saveState(this.path, {
+      ...state,
+      [isoDate]: { postedAt: new Date().toISOString(), events: [...events] },
+    });
+  }
 }
 
 function isNotFound(error: unknown): boolean {

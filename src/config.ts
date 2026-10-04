@@ -1,4 +1,9 @@
-/** Runtime configuration, read from environment variables. */
+/**
+ * Runtime configuration. The source is `process.env` under Node and the
+ * binding object under Cloudflare Workers, so it is always passed in.
+ */
+
+export type EnvSource = Readonly<Record<string, string | undefined>>;
 
 export interface Config {
   /** Wix event list page that is scraped for the event. */
@@ -15,38 +20,41 @@ export interface Config {
   readonly greenApiToken: string;
   /** WhatsApp group chat id, e.g. "120363012345678901@g.us". */
   readonly groupChatId: string;
-  /** Skip the actual WhatsApp send and log the message instead. */
+  /** Chat that receives test messages, so tests never reach the group. */
+  readonly testChatId: string;
+  /** Skip the actual WhatsApp send and report the message instead. */
   readonly dryRun: boolean;
   /** Ignore the Wednesday-to-Friday watch window (for manual testing). */
   readonly ignoreWindow: boolean;
   /** Ignore the price condition (for manual testing). */
   readonly ignorePrice: boolean;
   /**
-   * End-to-end test: really sends, but marks the message as a test and keeps
-   * its own state file, so the real announcement is not suppressed.
+   * End-to-end test: really sends, but marks the message as a test, delivers it
+   * to `testChatId` and keeps its own state, so the real announcement is not
+   * suppressed.
    */
   readonly testMode: boolean;
-  /** State file, relative to the repository root. */
+  /** State file for the Node entry point, relative to the repository root. */
   readonly stateFile: string;
 }
 
-function readFlag(name: string): boolean {
-  const raw = process.env[name];
+function readFlag(env: EnvSource, name: string): boolean {
+  const raw = env[name];
   return raw === "true" || raw === "1";
 }
 
-function readRequired(name: string, dryRun: boolean): string {
-  const raw = process.env[name];
+function readRequired(env: EnvSource, name: string, optional: boolean): string {
+  const raw = env[name];
   if (raw !== undefined && raw !== "") return raw;
-  // In a dry run we never call Green API, so missing credentials must not abort.
-  if (dryRun) return "";
+  // A dry run never calls Green API, so missing credentials must not abort.
+  if (optional) return "";
   throw new Error(`Environment variable ${name} is not set.`);
 }
 
-export function loadConfig(): Config {
-  const dryRun = readFlag("DRY_RUN");
-  const testMode = readFlag("TEST_MODE");
-  const priceRaw = process.env["EXPECTED_PRICE_EUR"];
+export function loadConfig(env: EnvSource): Config {
+  const dryRun = readFlag(env, "DRY_RUN");
+  const testMode = readFlag(env, "TEST_MODE");
+  const priceRaw = env["EXPECTED_PRICE_EUR"];
   const expectedPriceEur = priceRaw === undefined || priceRaw === "" ? 14 : Number(priceRaw);
 
   if (!Number.isFinite(expectedPriceEur)) {
@@ -54,17 +62,18 @@ export function loadConfig(): Config {
   }
 
   return {
-    eventListUrl: process.env["EVENT_LIST_URL"] ?? "https://www.dd-munich.de/event-list",
-    eventTitlePrefix: (process.env["EVENT_TITLE"] ?? "Friday Night Commander").toLowerCase(),
+    eventListUrl: env["EVENT_LIST_URL"] ?? "https://www.dd-munich.de/event-list",
+    eventTitlePrefix: (env["EVENT_TITLE"] ?? "Friday Night Commander").toLowerCase(),
     expectedPriceEur,
-    greenApiBaseUrl: process.env["GREENAPI_BASE_URL"] ?? "https://api.green-api.com",
-    greenApiInstanceId: readRequired("GREENAPI_ID_INSTANCE", dryRun),
-    greenApiToken: readRequired("GREENAPI_API_TOKEN", dryRun),
-    groupChatId: readRequired("WHATSAPP_GROUP_ID", dryRun),
+    greenApiBaseUrl: env["GREENAPI_BASE_URL"] ?? "https://api.green-api.com",
+    greenApiInstanceId: readRequired(env, "GREENAPI_ID_INSTANCE", dryRun),
+    greenApiToken: readRequired(env, "GREENAPI_API_TOKEN", dryRun),
+    groupChatId: readRequired(env, "WHATSAPP_GROUP_ID", dryRun),
+    testChatId: env["TEST_CHAT_ID"] ?? "",
     dryRun,
     // A test has to run now and with whatever price is currently listed.
-    ignoreWindow: testMode || readFlag("IGNORE_WINDOW"),
-    ignorePrice: testMode || readFlag("IGNORE_PRICE"),
+    ignoreWindow: testMode || readFlag(env, "IGNORE_WINDOW"),
+    ignorePrice: testMode || readFlag(env, "IGNORE_PRICE"),
     testMode,
     stateFile: testMode ? "state/test-posted.json" : "state/posted.json",
   };

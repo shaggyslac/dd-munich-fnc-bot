@@ -11,11 +11,15 @@
     "check": "tsx src/index.ts",
     "dry-run": "DRY_RUN=true IGNORE_WINDOW=true tsx src/index.ts",
     "find-group": "tsx src/scripts/find-group.ts",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.worker.json --noEmit",
+    "deploy": "wrangler deploy",
+    "tail": "wrangler tail"
   },
   "devDependencies": {
+    "@cloudflare/workers-types": "^5.20261003.1",
     "@types/node": "^22.10.2",
     "tsx": "^4.19.2",
-    "typescript": "^5.7.2"
+    "typescript": "^5.7.2",
+    "wrangler": "^4.147.0"
   }
 }

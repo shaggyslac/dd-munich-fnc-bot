@@ -1,0 +1,20 @@
+name = "dd-munich-fnc-bot"
+main = "src/worker.ts"
+compatibility_date = "2026-09-01"
+
+# Cloudflare runs cron triggers punctually; the window itself (Wed 00:00 –
+# Fri 18:00, Europe/Berlin) is enforced in code, so DST cannot shift it.
+[triggers]
+crons = ["*/10 * * * 2-5"]
+
+[vars]
+GREENAPI_BASE_URL = "https://7107.api.greenapi.com"
+EXPECTED_PRICE_EUR = "14"
+
+# Secrets (set with `wrangler secret put`):
+#   GREENAPI_ID_INSTANCE, GREENAPI_API_TOKEN, WHATSAPP_GROUP_ID,
+#   TEST_CHAT_ID, WORKER_TEST_TOKEN
+
+[[kv_namespaces]]
+binding = "STATE"
+id = "PLACEHOLDER"
